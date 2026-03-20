@@ -5,8 +5,7 @@ import SwiftUI
 enum AppColors {
 
     // Brand accent — deep blue-purple
-    static let accent = Color("AccentBrand", bundle: nil)
-        .self == .self ? dynamicColor(light: 0x5E5CE6, dark: 0x7B78F2) : .blue
+    static let accent = dynamicColor(light: 0x5E5CE6, dark: 0x7B78F2)
 
     // Readiness semantic colors
     static let ready = Color.green

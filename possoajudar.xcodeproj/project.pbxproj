@@ -25,6 +25,7 @@
 		AA000051000000000000001A /* ReadinessGaugeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000050000000000000001A /* ReadinessGaugeView.swift */; };
 		AA000053000000000000001A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AA000052000000000000001A /* Assets.xcassets */; };
 		AA000055000000000000001A /* HealthKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AA000054000000000000001A /* HealthKit.framework */; };
+		AA000057000000000000001A /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000056000000000000001A /* DesignSystem.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -49,6 +50,7 @@
 		AA000052000000000000001A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		AA000054000000000000001A /* HealthKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = HealthKit.framework; path = System/Library/Frameworks/HealthKit.framework; sourceTree = SDKROOT; };
 		AA000060000000000000001A /* possoajudar.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = possoajudar.entitlements; sourceTree = "<group>"; };
+		AA000056000000000000001A /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -141,6 +143,7 @@
 			isa = PBXGroup;
 			children = (
 				AA000050000000000000001A /* ReadinessGaugeView.swift */,
+				AA000056000000000000001A /* DesignSystem.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -248,6 +251,7 @@
 				AA000047000000000000001A /* SettingsView.swift in Sources */,
 				AA000049000000000000001A /* HistoryView.swift in Sources */,
 				AA000051000000000000001A /* ReadinessGaugeView.swift in Sources */,
+				AA000057000000000000001A /* DesignSystem.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

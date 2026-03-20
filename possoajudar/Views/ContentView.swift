@@ -33,7 +33,18 @@ struct ContentView: View {
                 }
                 .tag(3)
         }
-        .tint(.blue)
+        .tint(AppColors.accent)
+        .onAppear {
+            let appearance = UITabBarAppearance()
+            appearance.configureWithOpaqueBackground()
+            appearance.backgroundColor = UIColor(AppColors.surfacePrimary)
+            appearance.stackedLayoutAppearance.normal.iconColor = UIColor(AppColors.textTertiary)
+            appearance.stackedLayoutAppearance.normal.titleTextAttributes = [
+                .foregroundColor: UIColor(AppColors.textTertiary)
+            ]
+            UITabBar.appearance().standardAppearance = appearance
+            UITabBar.appearance().scrollEdgeAppearance = appearance
+        }
         .task {
             if !healthKit.isAuthorized {
                 await healthKit.requestAuthorization()

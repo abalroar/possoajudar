@@ -6,8 +6,8 @@ struct TrainerResponseView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 20) {
-                // Header readiness gauge
+            VStack(spacing: 0) {
+                // Hero: Readiness gauge
                 ReadinessGaugeView(
                     score: response.readiness.score,
                     label: response.readiness.label,
@@ -15,199 +15,218 @@ struct TrainerResponseView: View {
                     primarySignal: response.readiness.primarySignal,
                     size: 180
                 )
-                .padding(.top, 8)
+                .padding(.top, AppSpacing.xs)
+                .padding(.bottom, AppSpacing.xl)
 
-                // Trainer note (most important field)
+                // Tier 1 — Hero: Trainer Note
                 TrainerNoteCard(text: response.trainerNote)
+                    .padding(.horizontal, AppSpacing.screenMargin)
+                    .padding(.bottom, AppSpacing.xl)
 
-                // Today's plan
-                TodayPlanCard(plan: response.today)
+                // Tier 2 — Primary: Today + Body Reading
+                VStack(spacing: AppSpacing.lg) {
+                    TodayPlanCard(plan: response.today)
+                    BodyReadingCard(reading: response.bodyReading)
+                }
+                .padding(.horizontal, AppSpacing.screenMargin)
+                .padding(.bottom, AppSpacing.lg)
 
-                // Body reading
-                BodyReadingCard(reading: response.bodyReading)
-
-                // Watch signals
-                WatchSignalsCard(signals: response.watchSignals)
-
-                // Performance context
-                PerformanceContextCard(context: response.performanceContext)
-
-                // Weekly picture
-                WeeklyPictureCard(picture: response.weeklyPicture)
+                // Tier 3 — Secondary: Watch, Performance, Weekly
+                VStack(spacing: AppSpacing.md) {
+                    WatchSignalsCard(signals: response.watchSignals)
+                    PerformanceContextCard(context: response.performanceContext)
+                    WeeklyPictureCard(picture: response.weeklyPicture)
+                }
+                .padding(.horizontal, AppSpacing.screenMargin)
 
                 // Timestamp
                 Text(response.timestamp, style: .relative)
                     .font(.caption2)
-                    .foregroundColor(.secondary)
-                    .padding(.bottom, 20)
+                    .foregroundStyle(AppColors.textTertiary)
+                    .padding(.top, AppSpacing.lg)
+                    .padding(.bottom, AppSpacing.xl)
             }
-            .padding(.horizontal, 16)
         }
-        .background(Color(.systemBackground))
+        .background(AppColors.surfacePrimary)
         .navigationTitle("Análise do Trainer")
         .navigationBarTitleDisplayMode(.inline)
     }
 }
 
-// MARK: - Sub-cards
+// MARK: - Tier 1: Trainer Note (Hero card)
 
 private struct TrainerNoteCard: View {
     let text: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Label("Nota do Trainer", systemImage: "person.fill.checkmark")
-                .font(.caption.weight(.semibold))
-                .foregroundColor(.secondary)
-                .textCase(.uppercase)
+        VStack(alignment: .leading, spacing: AppSpacing.sm) {
+            Label("Nota do Trainer", systemImage: "quote.opening")
+                .sectionHeader()
 
             Text(text)
                 .font(.body)
-                .foregroundColor(.primary)
-                .lineSpacing(4)
+                .foregroundStyle(AppColors.textPrimary)
+                .lineSpacing(5)
         }
-        .padding(16)
+        .padding(AppSpacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(.secondarySystemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .background(
+            ZStack {
+                AppColors.surfaceElevated
+                AppGradients.trainerNote
+            }
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .overlay(alignment: .leading) {
+            RoundedRectangle(cornerRadius: 2)
+                .fill(AppColors.accent)
+                .frame(width: 3)
+                .padding(.vertical, AppSpacing.xs)
+        }
+        .shadow(color: AppColors.accent.opacity(0.1), radius: 12, y: 4)
     }
 }
+
+// MARK: - Tier 2: Today Plan
 
 private struct TodayPlanCard: View {
     let plan: TodayPlan
 
     private var recommendationColor: Color {
         switch plan.recommendation {
-        case "treinar": return .green
-        case "treino leve": return .yellow
-        case "recuperação ativa": return .orange
-        case "descanso": return .red
-        default: return .secondary
+        case "treinar": return AppColors.ready
+        case "treino leve": return AppColors.recovering
+        case "recuperação ativa": return AppColors.recovering
+        case "descanso": return AppColors.fatigued
+        default: return AppColors.textSecondary
         }
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: AppSpacing.componentGap) {
             Label("Plano de Hoje", systemImage: "figure.run")
-                .font(.caption.weight(.semibold))
-                .foregroundColor(.secondary)
-                .textCase(.uppercase)
+                .sectionHeader()
 
             HStack(alignment: .firstTextBaseline) {
                 Text(plan.recommendation.capitalized)
                     .font(.title3.bold())
-                    .foregroundColor(recommendationColor)
+                    .foregroundStyle(recommendationColor)
                 Spacer()
                 if let zone = plan.targetZone {
                     Text(zone)
                         .font(.headline.bold())
-                        .foregroundColor(.white)
+                        .foregroundStyle(.white)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 4)
-                        .background(Color.blue.opacity(0.8))
+                        .background(AppColors.accent)
                         .clipShape(Capsule())
                 }
             }
 
             if let hr = plan.targetAvgHr {
-                HStack(spacing: 4) {
-                    Image(systemName: "heart.fill").foregroundColor(.red).font(.caption)
+                HStack(spacing: AppSpacing.xxs) {
+                    Image(systemName: "heart.fill").foregroundStyle(AppColors.fatigued).font(.caption)
                     Text("Alvo: \(hr) bpm")
                         .font(.subheadline.weight(.medium))
                 }
             }
 
             if let duration = plan.durationMin {
-                HStack(spacing: 4) {
-                    Image(systemName: "clock").foregroundColor(.secondary).font(.caption)
+                HStack(spacing: AppSpacing.xxs) {
+                    Image(systemName: "clock").foregroundStyle(AppColors.textSecondary).font(.caption)
                     Text("\(duration) min")
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(AppColors.textSecondary)
                 }
             }
 
             if let structure = plan.structure, !structure.isEmpty {
-                Divider()
+                Divider().overlay(AppColors.surfaceTertiary)
                 Text(structure)
                     .font(.subheadline)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(AppColors.textSecondary)
                     .lineSpacing(3)
             }
 
             if let rationale = plan.rationale, !rationale.isEmpty {
-                Divider()
+                Divider().overlay(AppColors.surfaceTertiary)
                 Text(rationale)
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(AppColors.textTertiary)
                     .italic()
                     .lineSpacing(3)
             }
         }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(.secondarySystemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .cardStyle(elevation: .prominent)
     }
 }
+
+// MARK: - Tier 2: Body Reading
 
 private struct BodyReadingCard: View {
     let reading: BodyReading
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: AppSpacing.componentGap) {
             Label("Leitura Corporal", systemImage: "waveform.path.ecg")
-                .font(.caption.weight(.semibold))
-                .foregroundColor(.secondary)
-                .textCase(.uppercase)
+                .sectionHeader()
 
             Text(reading.recoveryStatus)
                 .font(.subheadline)
                 .lineSpacing(3)
 
             if !reading.fatigueSignals.isEmpty {
-                VStack(alignment: .leading, spacing: 6) {
-                    Label("Sinais de Fadiga", systemImage: "exclamationmark.triangle.fill")
-                        .font(.caption.weight(.semibold))
-                        .foregroundColor(.orange)
-                    ForEach(reading.fatigueSignals, id: \.self) { signal in
-                        HStack(alignment: .top, spacing: 6) {
-                            Text("•").foregroundColor(.orange)
-                            Text(signal).font(.caption).foregroundColor(.secondary)
-                        }
-                    }
-                }
+                SignalList(
+                    title: "Sinais de Fadiga",
+                    icon: "exclamationmark.triangle.fill",
+                    color: AppColors.recovering,
+                    items: reading.fatigueSignals
+                )
             }
 
             if !reading.positiveSignals.isEmpty {
-                VStack(alignment: .leading, spacing: 6) {
-                    Label("Sinais Positivos", systemImage: "checkmark.circle.fill")
-                        .font(.caption.weight(.semibold))
-                        .foregroundColor(.green)
-                    ForEach(reading.positiveSignals, id: \.self) { signal in
-                        HStack(alignment: .top, spacing: 6) {
-                            Text("•").foregroundColor(.green)
-                            Text(signal).font(.caption).foregroundColor(.secondary)
-                        }
-                    }
+                SignalList(
+                    title: "Sinais Positivos",
+                    icon: "checkmark.circle.fill",
+                    color: AppColors.ready,
+                    items: reading.positiveSignals
+                )
+            }
+        }
+        .cardStyle(elevation: .prominent)
+    }
+}
+
+private struct SignalList: View {
+    let title: String
+    let icon: String
+    let color: Color
+    let items: [String]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Label(title, systemImage: icon)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(color)
+            ForEach(items, id: \.self) { item in
+                HStack(alignment: .top, spacing: 6) {
+                    Circle().fill(color).frame(width: 5, height: 5).padding(.top, 5)
+                    Text(item).font(.caption).foregroundStyle(AppColors.textSecondary)
                 }
             }
         }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(.secondarySystemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 14))
     }
 }
+
+// MARK: - Tier 3: Watch Signals
 
 private struct WatchSignalsCard: View {
     let signals: WatchSignals
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: AppSpacing.sm) {
             Label("Sinais do Watch", systemImage: "applewatch")
-                .font(.caption.weight(.semibold))
-                .foregroundColor(.secondary)
-                .textCase(.uppercase)
+                .sectionHeader()
 
             if let hrv = signals.hrvInterpretation {
                 WatchSignalRow(icon: "waveform", label: "HRV", value: hrv)
@@ -216,13 +235,10 @@ private struct WatchSignalsCard: View {
                 WatchSignalRow(icon: "heart.fill", label: "FC Repouso", value: rhr)
             }
             if let vo2 = signals.vo2maxNote {
-                WatchSignalRow(icon: "lungs.fill", label: "VO₂ Máx", value: vo2)
+                WatchSignalRow(icon: "lungs.fill", label: "VO\u{2082} Máx", value: vo2)
             }
         }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(.secondarySystemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .cardStyle(elevation: .standard)
     }
 }
 
@@ -232,33 +248,34 @@ private struct WatchSignalRow: View {
     let value: String
 
     var body: some View {
-        HStack(alignment: .top, spacing: 10) {
+        HStack(alignment: .top, spacing: AppSpacing.sm) {
             Image(systemName: icon)
                 .font(.caption)
-                .foregroundColor(.blue)
+                .foregroundStyle(AppColors.accent)
                 .frame(width: 16)
             VStack(alignment: .leading, spacing: 2) {
                 Text(label)
                     .font(.caption2.weight(.semibold))
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(AppColors.textTertiary)
                     .textCase(.uppercase)
                 Text(value)
                     .font(.caption)
+                    .foregroundStyle(AppColors.textSecondary)
                     .lineSpacing(2)
             }
         }
     }
 }
 
+// MARK: - Tier 3: Performance Context
+
 private struct PerformanceContextCard: View {
     let context: PerformanceContext
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: AppSpacing.sm) {
             Label("Contexto de Performance", systemImage: "chart.line.uptrend.xyaxis")
-                .font(.caption.weight(.semibold))
-                .foregroundColor(.secondary)
-                .textCase(.uppercase)
+                .sectionHeader()
 
             if let last = context.vsLastSession {
                 ContextRow(label: "vs. Última Sessão", value: last)
@@ -270,10 +287,7 @@ private struct PerformanceContextCard: View {
                 ContextRow(label: "Tendência", value: trend)
             }
         }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(.secondarySystemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .cardStyle(elevation: .standard)
     }
 }
 
@@ -285,34 +299,35 @@ private struct ContextRow: View {
         VStack(alignment: .leading, spacing: 2) {
             Text(label)
                 .font(.caption2.weight(.semibold))
-                .foregroundColor(.secondary)
+                .foregroundStyle(AppColors.textTertiary)
                 .textCase(.uppercase)
             Text(value)
                 .font(.caption)
+                .foregroundStyle(AppColors.textSecondary)
                 .lineSpacing(2)
         }
     }
 }
+
+// MARK: - Tier 3: Weekly Picture
 
 private struct WeeklyPictureCard: View {
     let picture: WeeklyPicture
 
     private var loadColor: Color {
         switch picture.loadAssessment {
-        case "leve": return .blue
-        case "adequada": return .green
-        case "elevada": return .orange
-        case "excessiva": return .red
-        default: return .secondary
+        case "leve": return AppColors.inForm
+        case "adequada": return AppColors.ready
+        case "elevada": return AppColors.recovering
+        case "excessiva": return AppColors.fatigued
+        default: return AppColors.textSecondary
         }
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: AppSpacing.componentGap) {
             Label("Semana", systemImage: "calendar.badge.clock")
-                .font(.caption.weight(.semibold))
-                .foregroundColor(.secondary)
-                .textCase(.uppercase)
+                .sectionHeader()
 
             HStack {
                 Text("Carga Semanal")
@@ -320,31 +335,28 @@ private struct WeeklyPictureCard: View {
                 Spacer()
                 Text(picture.loadAssessment.capitalized)
                     .font(.subheadline.bold())
-                    .foregroundColor(loadColor)
+                    .foregroundStyle(loadColor)
             }
 
             if let next = picture.nextKeySession {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Próxima Sessão Chave")
                         .font(.caption2.weight(.semibold))
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(AppColors.textTertiary)
                         .textCase(.uppercase)
-                    Text(next).font(.caption).lineSpacing(2)
+                    Text(next).font(.caption).foregroundStyle(AppColors.textSecondary).lineSpacing(2)
                 }
             }
 
             if let rest = picture.restDayNeededBy {
-                HStack(spacing: 4) {
-                    Image(systemName: "moon.fill").font(.caption).foregroundColor(.purple)
+                HStack(spacing: AppSpacing.xxs) {
+                    Image(systemName: "moon.fill").font(.caption).foregroundStyle(.purple)
                     Text("Descanso recomendado até: \(rest)")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(AppColors.textSecondary)
                 }
             }
         }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(.secondarySystemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .cardStyle(elevation: .standard)
     }
 }

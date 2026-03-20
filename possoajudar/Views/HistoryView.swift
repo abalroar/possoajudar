@@ -7,22 +7,42 @@ struct HistoryView: View {
         NavigationStack {
             Group {
                 if persistence.responses.isEmpty {
-                    ContentUnavailableView(
-                        "Sem histórico",
-                        systemImage: "clock",
-                        description: Text("As análises do trainer aparecerão aqui após o primeiro check-in.")
-                    )
+                    emptyState
                 } else {
                     List(persistence.responses) { response in
                         NavigationLink(destination: TrainerResponseView(response: response)) {
                             HistoryRow(response: response)
                         }
+                        .listRowBackground(AppColors.surfacePrimary)
+                        .listRowSeparatorTint(AppColors.surfaceTertiary)
                     }
                     .listStyle(.plain)
+                    .scrollContentBackground(.hidden)
+                    .background(AppColors.surfacePrimary)
                 }
             }
             .navigationTitle("Histórico")
         }
+    }
+
+    private var emptyState: some View {
+        VStack(spacing: AppSpacing.md) {
+            Image(systemName: "waveform.path.ecg")
+                .font(.system(size: 56))
+                .foregroundStyle(AppColors.accent.opacity(0.4))
+
+            Text("Sem histórico")
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(AppColors.textPrimary)
+
+            Text("As análises do trainer aparecerão aqui após o primeiro check-in.")
+                .font(.subheadline)
+                .foregroundStyle(AppColors.textSecondary)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: 280)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(AppColors.surfacePrimary)
     }
 }
 
@@ -37,29 +57,35 @@ private struct HistoryRow: View {
     }
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppSpacing.componentGap) {
             ReadinessBadge(
                 score: response.readiness.score,
                 color: response.readiness.color
             )
 
             VStack(alignment: .leading, spacing: 3) {
+                Text(response.today.recommendation.capitalized)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(AppColors.textPrimary)
+
                 Text(formattedDate)
                     .font(.caption)
-                    .foregroundColor(.secondary)
-
-                Text(response.today.recommendation.capitalized)
-                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(AppColors.textSecondary)
 
                 if let zone = response.today.targetZone, let hr = response.today.targetAvgHr {
                     Text("\(zone) · \(hr) bpm")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                        .font(.caption2)
+                        .foregroundStyle(AppColors.textTertiary)
                 }
             }
 
             Spacer()
+
+            // Readiness color indicator bar
+            RoundedRectangle(cornerRadius: 2)
+                .fill(AppColors.readinessColor(for: response.readiness.color))
+                .frame(width: 3, height: 32)
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, AppSpacing.xxs)
     }
 }

@@ -22,40 +22,29 @@ struct DashboardView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 24) {
-                    // Top section: readiness + date
-                    headerSection
-
-                    // Quick signals row
-                    if let snap = snapshot {
-                        signalsRow(snap: snap)
-                    }
-
-                    // Primary action buttons
+                VStack(spacing: AppSpacing.sectionGap) {
+                    heroSection
+                    signalsSection
                     primaryActions
+                    latestResponseSection
 
-                    // Latest trainer response preview
-                    if let response = trainerResponse ?? persistence.latestResponse() {
-                        latestResponsePreview(response: response)
-                    }
-
-                    // Error
                     if let err = errorMessage {
                         Text(err)
                             .font(.caption)
-                            .foregroundColor(.red)
+                            .foregroundStyle(AppColors.fatigued)
                             .multilineTextAlignment(.center)
-                            .padding(.horizontal)
+                            .padding(.horizontal, AppSpacing.screenMargin)
                     }
                 }
-                .padding(.bottom, 24)
+                .padding(.bottom, AppSpacing.xl)
             }
+            .background(AppColors.surfacePrimary)
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     if isLoadingHealth || isLoadingClaude {
-                        ProgressView()
+                        ProgressView().tint(AppColors.accent)
                     }
                 }
             }
@@ -91,105 +80,119 @@ struct DashboardView: View {
         }
     }
 
-    // MARK: - Header
+    // MARK: - Hero Section (gradient background + gauge)
 
-    private var headerSection: some View {
-        VStack(spacing: 8) {
-            // Date + greeting
-            VStack(spacing: 2) {
-                Text(greetingText)
-                    .font(.headline)
-                    .foregroundColor(.secondary)
-                Text(formattedDate)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-            .padding(.top, 8)
+    private var heroSection: some View {
+        ZStack(alignment: .top) {
+            // Gradient background
+            AppGradients.heroBackground
+                .frame(height: 340)
+                .ignoresSafeArea(edges: .top)
 
-            // Readiness gauge
-            if let r = localReadiness {
-                ReadinessGaugeView(
-                    score: r.score,
-                    label: r.label,
-                    colorName: r.color,
-                    primarySignal: r.primarySignal,
-                    size: 200
-                )
-            } else if isLoadingHealth {
-                ProgressView("Lendo dados do Watch...")
-                    .frame(height: 220)
-            } else {
-                // No data yet
-                VStack(spacing: 8) {
-                    Image(systemName: "applewatch")
-                        .font(.system(size: 48))
-                        .foregroundColor(.secondary)
-                    Text("Aguardando dados do Apple Watch")
+            VStack(spacing: AppSpacing.xs) {
+                VStack(spacing: AppSpacing.xxs) {
+                    Text(greetingText)
+                        .font(.title3).fontWeight(.semibold)
+                        .foregroundStyle(AppColors.textPrimary)
+                    Text(formattedDate)
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(AppColors.textSecondary)
                 }
-                .frame(height: 220)
+                .padding(.top, AppSpacing.md)
+
+                if let r = localReadiness {
+                    ReadinessGaugeView(
+                        score: r.score,
+                        label: r.label,
+                        colorName: r.color,
+                        primarySignal: r.primarySignal,
+                        size: 200
+                    )
+                } else if isLoadingHealth {
+                    VStack(spacing: AppSpacing.sm) {
+                        ProgressView()
+                            .tint(AppColors.accent)
+                            .scaleEffect(1.2)
+                        Text("Lendo dados do Watch...")
+                            .font(.subheadline)
+                            .foregroundStyle(AppColors.textSecondary)
+                    }
+                    .frame(height: 230)
+                } else {
+                    VStack(spacing: AppSpacing.sm) {
+                        Image(systemName: "applewatch")
+                            .font(.system(size: 48))
+                            .foregroundStyle(AppColors.textTertiary)
+                        Text("Aguardando dados do Apple Watch")
+                            .font(.subheadline)
+                            .foregroundStyle(AppColors.textSecondary)
+                    }
+                    .frame(height: 230)
+                }
             }
         }
     }
 
-    // MARK: - Quick Signals Row
+    // MARK: - Signal Chips
 
-    private func signalsRow(snap: HealthSnapshot) -> some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 12) {
-                if let hrv = snap.hrv {
-                    SignalChip(
-                        icon: "waveform",
-                        label: "HRV",
-                        value: String(format: "%.0f ms", hrv),
-                        color: hrv >= ReadinessCalculator.hrvBaseline ? .green : .orange
-                    )
-                }
-                if let rhr = snap.restingHR {
-                    SignalChip(
-                        icon: "heart.fill",
-                        label: "FC Repouso",
-                        value: String(format: "%.0f bpm", rhr),
-                        color: rhr <= ReadinessCalculator.hrBaseline ? .green : .orange
-                    )
-                }
-                if let sleep = snap.sleepHours {
-                    SignalChip(
-                        icon: "moon.fill",
-                        label: "Sono",
-                        value: String(format: "%.1fh", sleep),
-                        color: sleep >= 7 ? .green : (sleep >= 6 ? .yellow : .red)
-                    )
-                }
-                if let vo2 = snap.vo2max {
-                    SignalChip(
-                        icon: "lungs.fill",
-                        label: "VO₂ Máx",
-                        value: String(format: "%.1f", vo2),
-                        color: vo2 >= 40 ? .green : (vo2 >= 35 ? .yellow : .orange)
-                    )
-                }
-                if snap.consecutiveTrainingDays > 0 {
-                    SignalChip(
-                        icon: "flame.fill",
-                        label: "Sequência",
-                        value: "\(snap.consecutiveTrainingDays)d",
-                        color: snap.consecutiveTrainingDays >= 5 ? .orange : .blue
-                    )
+    private var signalsSection: some View {
+        Group {
+            if let snap = snapshot {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: AppSpacing.componentGap) {
+                        if let hrv = snap.hrv {
+                            SignalChip(
+                                icon: "waveform",
+                                label: "HRV",
+                                value: String(format: "%.0f ms", hrv),
+                                color: hrv >= ReadinessCalculator.hrvBaseline ? AppColors.ready : AppColors.recovering
+                            )
+                        }
+                        if let rhr = snap.restingHR {
+                            SignalChip(
+                                icon: "heart.fill",
+                                label: "FC Repouso",
+                                value: String(format: "%.0f bpm", rhr),
+                                color: rhr <= ReadinessCalculator.hrBaseline ? AppColors.ready : AppColors.recovering
+                            )
+                        }
+                        if let sleep = snap.sleepHours {
+                            SignalChip(
+                                icon: "moon.fill",
+                                label: "Sono",
+                                value: String(format: "%.1fh", sleep),
+                                color: sleep >= 7 ? AppColors.ready : (sleep >= 6 ? AppColors.recovering : AppColors.fatigued)
+                            )
+                        }
+                        if let vo2 = snap.vo2max {
+                            SignalChip(
+                                icon: "lungs.fill",
+                                label: "VO\u{2082} Máx",
+                                value: String(format: "%.1f", vo2),
+                                color: vo2 >= 40 ? AppColors.ready : (vo2 >= 35 ? AppColors.recovering : AppColors.fatigued)
+                            )
+                        }
+                        if snap.consecutiveTrainingDays > 0 {
+                            SignalChip(
+                                icon: "flame.fill",
+                                label: "Sequência",
+                                value: "\(snap.consecutiveTrainingDays)d",
+                                color: snap.consecutiveTrainingDays >= 5 ? AppColors.recovering : AppColors.inForm
+                            )
+                        }
+                    }
+                    .padding(.horizontal, AppSpacing.screenMargin)
                 }
             }
-            .padding(.horizontal, 16)
         }
     }
 
-    // MARK: - Primary Actions
+    // MARK: - CTA Buttons
 
     private var primaryActions: some View {
-        VStack(spacing: 12) {
-            // Main CTA: Get trainer analysis
+        VStack(spacing: AppSpacing.componentGap) {
             Button(action: fetchTrainerAnalysis) {
-                HStack {
+                HStack(spacing: AppSpacing.xs) {
                     if isLoadingClaude {
                         ProgressView().tint(.white)
                         Text("Consultando o trainer...")
@@ -199,74 +202,73 @@ struct DashboardView: View {
                     }
                 }
                 .font(.headline)
-                .foregroundColor(.white)
+                .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
                 .frame(height: 52)
-                .background(Color.blue)
+                .background(AppGradients.ctaButton)
                 .clipShape(RoundedRectangle(cornerRadius: 14))
+                .shadow(color: AppColors.accent.opacity(0.3), radius: 8, y: 4)
             }
             .disabled(isLoadingClaude || isLoadingHealth)
-            .padding(.horizontal, 16)
 
-            // Secondary: Log workout
             Button(action: { showingWorkoutLog = true }) {
-                HStack {
+                HStack(spacing: AppSpacing.xs) {
                     Image(systemName: "plus.circle")
                     Text("Registrar Treino")
                 }
                 .font(.subheadline.weight(.medium))
-                .foregroundColor(.blue)
+                .foregroundStyle(AppColors.accent)
                 .frame(maxWidth: .infinity)
                 .frame(height: 44)
-                .background(Color.blue.opacity(0.1))
+                .background(AppColors.accent.opacity(0.12))
                 .clipShape(RoundedRectangle(cornerRadius: 12))
             }
-            .padding(.horizontal, 16)
         }
+        .padding(.horizontal, AppSpacing.screenMargin)
     }
 
     // MARK: - Latest Response Preview
 
-    private func latestResponsePreview(response: TrainerResponse) -> some View {
-        Button(action: { showingResponse = true }) {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    Label("Última análise", systemImage: "person.fill.checkmark")
-                        .font(.caption.weight(.semibold))
-                        .foregroundColor(.secondary)
-                        .textCase(.uppercase)
-                    Spacer()
-                    Text(response.timestamp, style: .relative)
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                }
-
-                Text(response.trainerNote)
-                    .font(.subheadline)
-                    .foregroundColor(.primary)
-                    .lineLimit(3)
-                    .multilineTextAlignment(.leading)
-
-                HStack(spacing: 8) {
-                    if let zone = response.today.targetZone {
-                        Tag(text: zone, color: .blue)
+    @ViewBuilder
+    private var latestResponseSection: some View {
+        if let response = trainerResponse ?? persistence.latestResponse() {
+            Button(action: { showingResponse = true }) {
+                VStack(alignment: .leading, spacing: AppSpacing.componentGap) {
+                    HStack {
+                        Label("Última análise", systemImage: "person.fill.checkmark")
+                            .sectionHeader()
+                        Spacer()
+                        Text(response.timestamp, style: .relative)
+                            .font(.caption2)
+                            .foregroundStyle(AppColors.textTertiary)
                     }
-                    if let hr = response.today.targetAvgHr {
-                        Tag(text: "\(hr) bpm", color: .red)
+
+                    Text(response.trainerNote)
+                        .font(.subheadline)
+                        .foregroundStyle(AppColors.textPrimary)
+                        .lineLimit(3)
+                        .multilineTextAlignment(.leading)
+                        .lineSpacing(3)
+
+                    HStack(spacing: AppSpacing.xs) {
+                        if let zone = response.today.targetZone {
+                            Tag(text: zone, color: AppColors.accent)
+                        }
+                        if let hr = response.today.targetAvgHr {
+                            Tag(text: "\(hr) bpm", color: AppColors.fatigued)
+                        }
+                        Tag(text: response.weeklyPicture.loadAssessment.capitalized, color: AppColors.textSecondary)
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundStyle(AppColors.textTertiary)
                     }
-                    Tag(text: response.weeklyPicture.loadAssessment.capitalized, color: .secondary)
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
                 }
+                .cardStyle(elevation: .standard)
             }
-            .padding(16)
-            .background(Color(.secondarySystemBackground))
-            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .buttonStyle(.plain)
+            .padding(.horizontal, AppSpacing.screenMargin)
         }
-        .buttonStyle(.plain)
-        .padding(.horizontal, 16)
     }
 
     // MARK: - Data Loading
@@ -297,38 +299,26 @@ struct DashboardView: View {
             showingNoAPIKey = true
             return
         }
-
         isLoadingClaude = true
         errorMessage = nil
 
         Task {
             if snapshot == nil { await loadHealthData() }
             guard let snap = snapshot else {
-                await MainActor.run {
-                    errorMessage = "Não foi possível ler os dados de saúde."
-                    isLoadingClaude = false
-                }
+                errorMessage = "Não foi possível ler os dados de saúde."
+                isLoadingClaude = false
                 return
             }
-
-            let context = await healthKit.buildContext(
-                from: snap,
-                timeOfDay: timeOfDay
-            )
-
+            let context = await healthKit.buildContext(from: snap, timeOfDay: timeOfDay)
             do {
                 let response = try await claude.fetchAnalysis(context: context)
                 persistence.save(response: response)
-                await MainActor.run {
-                    trainerResponse = response
-                    isLoadingClaude = false
-                    showingResponse = true
-                }
+                trainerResponse = response
+                isLoadingClaude = false
+                showingResponse = true
             } catch {
-                await MainActor.run {
-                    errorMessage = error.localizedDescription
-                    isLoadingClaude = false
-                }
+                errorMessage = error.localizedDescription
+                isLoadingClaude = false
             }
         }
     }
@@ -370,7 +360,7 @@ struct DashboardView: View {
     }
 }
 
-// MARK: - Reusable Components
+// MARK: - Signal Chip
 
 struct SignalChip: View {
     let icon: String
@@ -379,22 +369,28 @@ struct SignalChip: View {
     let color: Color
 
     var body: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: AppSpacing.xxs) {
             Image(systemName: icon)
-                .font(.system(size: 14))
-                .foregroundColor(color)
+                .font(.footnote)
+                .foregroundStyle(color)
             Text(value)
-                .font(.system(size: 13, weight: .bold, design: .rounded))
-                .foregroundColor(.primary)
+                .font(.subheadline.weight(.bold).monospacedDigit())
+                .foregroundStyle(AppColors.textPrimary)
             Text(label)
-                .font(.system(size: 10))
-                .foregroundColor(.secondary)
+                .font(.caption2)
+                .foregroundStyle(AppColors.textSecondary)
         }
-        .frame(width: 72, height: 68)
-        .background(Color(.secondarySystemBackground))
+        .frame(width: 88, height: 80)
+        .background(AppColors.surfaceElevated)
         .clipShape(RoundedRectangle(cornerRadius: 12))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(color.opacity(0.2), lineWidth: 1)
+        )
     }
 }
+
+// MARK: - Tag
 
 struct Tag: View {
     let text: String
@@ -403,7 +399,7 @@ struct Tag: View {
     var body: some View {
         Text(text)
             .font(.caption2.weight(.medium))
-            .foregroundColor(color)
+            .foregroundStyle(color)
             .padding(.horizontal, 6)
             .padding(.vertical, 2)
             .background(color.opacity(0.12))
